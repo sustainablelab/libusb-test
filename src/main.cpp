@@ -117,7 +117,8 @@ static void print_devs(libusb_device **devs)
             return;
         }
 
-        /* print_all_descriptors(&desc); */
+        if(0) print_all_descriptors(&desc);
+
         printf("\nUSB class: %s | ", lookup_usb_class(desc.bDeviceClass));
         printf("speed: %s | ", lookup_usb_speed(dev));
         uint8_t endpoint=0; // TODO: figure out which endpoint to look at
@@ -157,7 +158,7 @@ static void print_devs(libusb_device **devs)
     }
 }
 
-int main(int argc, char **argv)
+int main()
 {
     /* =====[ SETUP ]===== */
     // Make a context to avoid interfering with other libusb applications

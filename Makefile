@@ -1,55 +1,48 @@
-EXE = bob
-SOURCES = main.cpp
-CXXFLAGS =
-LIBS =
+SRC := src/main.cpp
+EXE := build/$(basename $(notdir $(SRC)))
+HEADER_LIST := build/$(basename $(notdir $(SRC))).d
 
-OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
-UNAME_S := $(shell uname -s)
-CXXFLAGS += -g -Wall -Wformat
-CXXFLAGS_OFF = -Wno-unused-function
-CXXFLAGS += $(CXXFLAGS_OFF)
+CXXFLAGS_BASE := -std=c++20 -Wall -Wextra
+CXXFLAGS_USB := `pkg-config --cflags libusb-1.0`
+CXXFLAGS := $(CXXFLAGS_BASE) $(CXXFLAGS_USB)
+LDLIBS := `pkg-config --libs libusb-1.0`
 
-##---------------------------------------------------------------------
-## BUILD FLAGS PER PLATFORM
-##---------------------------------------------------------------------
+default-target: $(EXE)
 
-ifeq ($(OS), Windows_NT)
-	ECHO_MESSAGE = "MinGW"
-	LIBS += `pkg-config --libs-only-l libusb-1.0`
-	CXXFLAGS += `pkg-config --cflags libusb-1.0`
-	CFLAGS = $(CXXFLAGS)
-endif
+$(EXE): $(SRC)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
-##---------------------------------------------------------------------
-## BUILD RULES
-##---------------------------------------------------------------------
+.PHONY: $(HEADER_LIST)
+$(HEADER_LIST): $(SRC)
+	$(CXX) $(CXXFLAGS) -M $^ -MF $@
 
-%.o:%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-all: $(EXE)
-	@echo Build complete for $(ECHO_MESSAGE)
-
-$(EXE): $(OBJS)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
-
-.PHONY: clean
-clean:
-	rm -f $(EXE) $(OBJS)
-
-.PHONY: print-libs
-print-libs: main.cpp
-	$(CXX) $(CXXFLAGS) $< -M > libs.txt
+build/ctags-dlist: ctags-dlist.cpp
+	$(CXX) $(CXXFLAGS_BASE) $^ -o $@
 
 .PHONY: tags
-tags: main.cpp
-	ctags --c-kinds=+l --exclude=Makefile -R .
+tags: $(HEADER_LIST) build/ctags-dlist
+	build/ctags-dlist $(HEADER_LIST)
+	ctags --c-kinds=+p+x -L headers.txt
+	ctags --c-kinds=+p+x -a $(SRC)
 
-.PHONY: lib-tags
-lib-tags: main.cpp
-	$(CXX) $(CXXFLAGS) $< -M > headers-windows.txt
-	python.exe parse-lib-tags.py
-	rm -f headers-windows.txt
-	ctags -f lib-tags --c-kinds=+p -L headers-posix.txt
-	rm -f headers-posix.txt
+.PHONY: what
+what:
+	@echo
+	@echo --- My make variables ---
+	@echo
+	@echo "CXX              : "$(CXX)
+	@echo "CXXFLAGS         : "$(CXXFLAGS)
+	@echo "SRC              : "$(SRC)
+	@echo "EXE              : "$(EXE)
+	@echo "HEADER_LIST      : "$(HEADER_LIST)
 
+.PHONY: how
+how:
+	@echo
+	@echo --- Build and Run ---
+	@echo
+	@echo "             Vim shortcut    Vim command line (approximate)"
+	@echo "             ------------    ------------------------------"
+	@echo "Build        ;<Space>        :make -B  <if(error)> :copen"
+	@echo "Run          ;r<Space>       :!./build/main"
+	@echo "Make tags    ;t<Space>       :make tags"

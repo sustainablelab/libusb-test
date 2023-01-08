@@ -1,6 +1,4 @@
-*.o
+headers.txt
 tags
-lib-tags
-libs.txt
-*.exe
+build/
 
